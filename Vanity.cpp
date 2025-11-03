@@ -213,6 +213,9 @@ bool VanitySearch::initAddress(std::string& address, ADDRESS_ITEM* it) {
 	case '3':
 		aType = P2SH;
 		break;
+	case 'T':
+		aType = TRON;
+		break;
 	case 'b':
 	case 'B':
 		std::transform(address.begin(), address.end(), address.begin(), ::tolower);
@@ -222,13 +225,13 @@ bool VanitySearch::initAddress(std::string& address, ADDRESS_ITEM* it) {
 	}
 
 	if (aType == -1) {
-		fprintf(stdout, "Ignoring address \"%s\" (must start with 1 or 3 or bc1q)\n", address.c_str());
+		fprintf(stdout, "Ignoring address \"%s\" (must start with 1, 3, T or bc1q)\n", address.c_str());
 		return false;
 	}
 
 	if (searchType == -1) searchType = aType;
 	if (aType != searchType) {
-		fprintf(stdout, "Ignoring address \"%s\" (P2PKH, P2SH or BECH32 allowed at once)\n", address.c_str());
+		fprintf(stdout, "Ignoring address \"%s\" (P2PKH, P2SH, BECH32 or TRON allowed at once)\n", address.c_str());
 		return false;
 	}
 

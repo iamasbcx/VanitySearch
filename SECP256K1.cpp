@@ -18,6 +18,7 @@
 #include "SECP256k1.h"
 #include "hash/sha256.h"
 #include "hash/ripemd160.h"
+#include "hash/keccak256.h"
 #include "Base58.h"
 #include "Bech32.h"
 #include <string.h>
@@ -427,6 +428,16 @@ void Secp256K1::GetHash160(int type,bool compressed,
   }
   break;
 
+  case TRON:
+  {
+    // TRON uses Keccak256, fallback to single key processing
+    GetHash160(TRON, false, k0, h0);
+    GetHash160(TRON, false, k1, h1);
+    GetHash160(TRON, false, k2, h2);
+    GetHash160(TRON, false, k3, h3);
+  }
+  break;
+
   }
 
 }
@@ -593,6 +604,24 @@ void Secp256K1::GetHash160(int type, bool compressed, Point &pubKey, unsigned ch
     sha256(script, 22, shapk);
     ripemd160_32(shapk, hash);
 
+  }
+  break;
+
+  case TRON:
+  {
+    // TRON uses uncompressed public key with Keccak256
+    unsigned char publicKeyBytes[65];
+    unsigned char keccak_hash[32];
+
+    // Uncompressed public key (without 0x04 prefix for Keccak)
+    pubKey.x.Get32Bytes(publicKeyBytes);
+    pubKey.y.Get32Bytes(publicKeyBytes + 32);
+    
+    // Keccak256 hash
+    keccak256(publicKeyBytes, 64, keccak_hash);
+    
+    // Take last 20 bytes
+    memcpy(hash, keccak_hash + 12, 20);
   }
   break;
 
@@ -765,6 +794,32 @@ std::string Secp256K1::GetAddress(int type, bool compressed, Point &pubKey) {
     }
     address[0] = 0x05;
     break;
+
+  case TRON:
+  {
+    // TRON address format: 0x41 + keccak256(pubkey)[12:] + checksum
+    unsigned char tron_addr[25];
+    unsigned char hash160[20];
+    unsigned char checksum_data[32];
+    
+    // Get Keccak hash (last 20 bytes)
+    GetHash160(TRON, false, pubKey, hash160);
+    
+    // Add TRON prefix 0x41
+    tron_addr[0] = 0x41;
+    memcpy(tron_addr + 1, hash160, 20);
+    
+    // Double SHA256 for checksum
+    sha256(tron_addr, 21, checksum_data);
+    sha256(checksum_data, 32, checksum_data);
+    
+    // Add first 4 bytes of checksum
+    memcpy(tron_addr + 21, checksum_data, 4);
+    
+    // Base58 encode
+    return EncodeBase58(tron_addr, tron_addr + 25);
+  }
+  break;
   }
 
   GetHash160(type,compressed,pubKey, address + 1);
