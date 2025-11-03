@@ -6,6 +6,7 @@
 #define KECCAK256_H
 
 #include <stdint.h>
+#include <stddef.h>
 
 void keccak256(const uint8_t* input, size_t length, uint8_t* output);
 

@@ -11,7 +11,7 @@ SRC = Base58.cpp IntGroup.cpp main.cpp Random.cpp \
 
 OBJDIR = obj
 
-gpu=1
+#gpu=1
 ccap=89
 
 ifdef gpu
@@ -33,9 +33,9 @@ OBJET = $(addprefix $(OBJDIR)/, \
 
 endif
 
-CXX        = g++-9
+CXX        = g++
 CUDA       = /usr/local/cuda-11.8
-CXXCUDA    = /usr/bin/g++-9
+CXXCUDA    = /usr/bin/g++
 NVCC       = $(CUDA)/bin/nvcc
 
 ifdef gpu
