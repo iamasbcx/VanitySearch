@@ -715,3 +715,90 @@ __device__ __noinline__ void _GetHash160P2SHUncomp(uint64_t *x, uint64_t *y, uin
   RIPEMD160Transform((uint32_t *)hash, s);
 
 }
+// ---------------------------------------------------------------------------------
+// TRON address generation (Keccak-256)
+// ---------------------------------------------------------------------------------
+
+__device__ __noinline__ void _GetTronHash(uint64_t *x, uint64_t *y, uint8_t *hash) {
+  uint32_t *x32 = (uint32_t *)(x);
+  uint32_t *y32 = (uint32_t *)(y);
+  uint8_t publicKey[64];
+  uint8_t keccakHash[32];
+  
+  // Build uncompressed public key (64 bytes, no prefix)
+  // X coordinate (32 bytes, big-endian)
+  publicKey[0] = (x32[7] >> 24) & 0xFF;
+  publicKey[1] = (x32[7] >> 16) & 0xFF;
+  publicKey[2] = (x32[7] >> 8) & 0xFF;
+  publicKey[3] = x32[7] & 0xFF;
+  publicKey[4] = (x32[6] >> 24) & 0xFF;
+  publicKey[5] = (x32[6] >> 16) & 0xFF;
+  publicKey[6] = (x32[6] >> 8) & 0xFF;
+  publicKey[7] = x32[6] & 0xFF;
+  publicKey[8] = (x32[5] >> 24) & 0xFF;
+  publicKey[9] = (x32[5] >> 16) & 0xFF;
+  publicKey[10] = (x32[5] >> 8) & 0xFF;
+  publicKey[11] = x32[5] & 0xFF;
+  publicKey[12] = (x32[4] >> 24) & 0xFF;
+  publicKey[13] = (x32[4] >> 16) & 0xFF;
+  publicKey[14] = (x32[4] >> 8) & 0xFF;
+  publicKey[15] = x32[4] & 0xFF;
+  publicKey[16] = (x32[3] >> 24) & 0xFF;
+  publicKey[17] = (x32[3] >> 16) & 0xFF;
+  publicKey[18] = (x32[3] >> 8) & 0xFF;
+  publicKey[19] = x32[3] & 0xFF;
+  publicKey[20] = (x32[2] >> 24) & 0xFF;
+  publicKey[21] = (x32[2] >> 16) & 0xFF;
+  publicKey[22] = (x32[2] >> 8) & 0xFF;
+  publicKey[23] = x32[2] & 0xFF;
+  publicKey[24] = (x32[1] >> 24) & 0xFF;
+  publicKey[25] = (x32[1] >> 16) & 0xFF;
+  publicKey[26] = (x32[1] >> 8) & 0xFF;
+  publicKey[27] = x32[1] & 0xFF;
+  publicKey[28] = (x32[0] >> 24) & 0xFF;
+  publicKey[29] = (x32[0] >> 16) & 0xFF;
+  publicKey[30] = (x32[0] >> 8) & 0xFF;
+  publicKey[31] = x32[0] & 0xFF;
+  
+  // Y coordinate (32 bytes, big-endian)
+  publicKey[32] = (y32[7] >> 24) & 0xFF;
+  publicKey[33] = (y32[7] >> 16) & 0xFF;
+  publicKey[34] = (y32[7] >> 8) & 0xFF;
+  publicKey[35] = y32[7] & 0xFF;
+  publicKey[36] = (y32[6] >> 24) & 0xFF;
+  publicKey[37] = (y32[6] >> 16) & 0xFF;
+  publicKey[38] = (y32[6] >> 8) & 0xFF;
+  publicKey[39] = y32[6] & 0xFF;
+  publicKey[40] = (y32[5] >> 24) & 0xFF;
+  publicKey[41] = (y32[5] >> 16) & 0xFF;
+  publicKey[42] = (y32[5] >> 8) & 0xFF;
+  publicKey[43] = y32[5] & 0xFF;
+  publicKey[44] = (y32[4] >> 24) & 0xFF;
+  publicKey[45] = (y32[4] >> 16) & 0xFF;
+  publicKey[46] = (y32[4] >> 8) & 0xFF;
+  publicKey[47] = y32[4] & 0xFF;
+  publicKey[48] = (y32[3] >> 24) & 0xFF;
+  publicKey[49] = (y32[3] >> 16) & 0xFF;
+  publicKey[50] = (y32[3] >> 8) & 0xFF;
+  publicKey[51] = y32[3] & 0xFF;
+  publicKey[52] = (y32[2] >> 24) & 0xFF;
+  publicKey[53] = (y32[2] >> 16) & 0xFF;
+  publicKey[54] = (y32[2] >> 8) & 0xFF;
+  publicKey[55] = y32[2] & 0xFF;
+  publicKey[56] = (y32[1] >> 24) & 0xFF;
+  publicKey[57] = (y32[1] >> 16) & 0xFF;
+  publicKey[58] = (y32[1] >> 8) & 0xFF;
+  publicKey[59] = y32[1] & 0xFF;
+  publicKey[60] = (y32[0] >> 24) & 0xFF;
+  publicKey[61] = (y32[0] >> 16) & 0xFF;
+  publicKey[62] = (y32[0] >> 8) & 0xFF;
+  publicKey[63] = y32[0] & 0xFF;
+  
+  // Compute Keccak-256 hash
+  keccak256_gpu(publicKey, 64, keccakHash);
+  
+  // TRON address is last 20 bytes of Keccak hash
+  for (int i = 0; i < 20; i++) {
+    hash[i] = keccakHash[i + 12];
+  }
+}
