@@ -33,11 +33,12 @@ using namespace std;
 
 void printUsage() {
 
-	fprintf(stdout, "VanitySearch [-check] [-u] [-b] [-stop] [-i inputfile]\n");
+	fprintf(stdout, "VanitySearch [-check] [-u] [-b] [-tron] [-stop] [-i inputfile]\n");
 	fprintf(stdout, "             [-gpuId gpuId1[,gpuId2,...]] [-o outputfile] [-check] [address]\n");
 	fprintf(stdout, " address: address to search\n");
 	fprintf(stdout, " -u: Search uncompressed addresses\n");
 	fprintf(stdout, " -b: Search both uncompressed or compressed addresses\n");
+	fprintf(stdout, " -tron: Search TRON addresses (starts with T)\n");
 	fprintf(stdout, " -stop: Stop when all addresses are found\n");
 	fprintf(stdout, " -i inputfile: Get list of addresses to search from specified file\n");
 	fprintf(stdout, " -o outputfile: Output results to the specified file\n");
@@ -518,6 +519,10 @@ int main(int argc, char* argv[]) {
 		}
 		else if (strcmp(argv[a], "-b") == 0) {
 			searchMode = SEARCH_BOTH;
+			a++;
+		}
+		else if (strcmp(argv[a], "-tron") == 0) {
+			searchMode = SEARCH_TRON;
 			a++;
 		}
 		else if (strcmp(argv[a], "-g") == 0) {
