@@ -430,6 +430,16 @@ void Secp256K1::GetHash160(int type,bool compressed,
   }
   break;
 
+  case TRON:
+  {
+    // TRON uses Keccak256, fallback to single key processing
+    GetHash160(TRON, false, k0, h0);
+    GetHash160(TRON, false, k1, h1);
+    GetHash160(TRON, false, k2, h2);
+    GetHash160(TRON, false, k3, h3);
+  }
+  break;
+
   }
 
 }

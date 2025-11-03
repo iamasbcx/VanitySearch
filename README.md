@@ -5,6 +5,13 @@ This is a modified version of VanitySearch by [JeanLucPons](https://github.com/J
 
 Performance optimization completed by [aaelick](https://github.com/aaelick). **Only one GPU per instance.**
 
+## Features
+- Bitcoin address generation (P2PKH, P2SH, Bech32)
+- **NEW: TRON (TRC20) address generation** - See [TRON_README.md](TRON_README.md)
+- Custom range scanning
+- Multi-address scanning
+- GPU acceleration (CUDA)
+
 # Build
 ## Windows
 
@@ -44,3 +51,11 @@ Performance optimization completed by [aaelick](https://github.com/aaelick). **O
     15oCidgtdDz6VVKiMsZjRvHR9scJvN9GAX /privatekey:80000000000100000
     1MVDYgVaSN6iKKEsbzRUAYFrYJadLYZvvZ /targetaddress
     ```
+
+- Example for TRON vanity address (NEW)
+    ```
+    ./vanitysearch TTest
+    ./vanitysearch -gpu -gpuId 0 TMyVanity
+    ```
+    
+    TRON addresses start with 'T' and use Keccak256 hashing. See [TRON_README.md](TRON_README.md) for details.
