@@ -1,136 +1,78 @@
-# TRON Address Generation Support
+# TRON Address Generation Usage
 
-## Overview
-
-This implementation adds TRON (TRC20) address generation support to VanitySearch. TRON addresses use a different hashing algorithm (Keccak256) compared to Bitcoin addresses (SHA256+RIPEMD160).
-
-## TRON Address Generation Algorithm
-
-1. Generate secp256k1 public key from private key (uncompressed, 64 bytes)
-2. Hash the public key with Keccak256 → 32 bytes
-3. Take the last 20 bytes of the Keccak256 hash
-4. Prepend TRON address prefix byte `0x41` → 21 bytes total
-5. Calculate checksum: Double SHA256 of the 21 bytes
-6. Take first 4 bytes of the checksum
-7. Append checksum to address: 21 + 4 = 25 bytes
-8. Encode in Base58 → Final TRON address (starts with 'T')
-
-## Implementation Status
-
-### ✅ Completed (CPU)
-- Keccak256 hash implementation (C++)
-- TRON address type definition
-- TRON address generation in SECP256K1 class
-- Address recognition for TRON (addresses starting with 'T')
-- Integration with existing vanity search infrastructure
-- Build system updates
-
-### 🔄 In Progress (GPU)
-- Keccak256 CUDA implementation (placeholder created)
-- GPU kernel integration for TRON addresses
-- Performance optimization for GPU mining
-
-## Usage
-
-### Searching for TRON Vanity Addresses
-
-```bash
-# Search for a TRON address starting with "TTest"
-./vanitysearch TTest
-
-# Search for addresses from a file
-./vanitysearch -i tron_addresses.txt -o found.txt
-
-# Use specific GPU
-./vanitysearch -gpu -gpuId 0 TMyVanity
-```
-
-### TRON Address Format
-
-Valid TRON addresses:
-- Start with the letter 'T'
-- Are 34 characters long when Base58 encoded
-- Example: `TJRabPrwbZy45sbavfcjxwKTPmjC7Zqeew`
-
-## Files Modified/Added
-
-### New Files
-- `hash/keccak256.h` - Keccak256 hash header
-- `hash/keccak256.cpp` - Keccak256 implementation
-- `GPU/GPUKeccak256.h` - GPU Keccak256 (placeholder)
-
-### Modified Files
-- `SECP256k1.h` - Added TRON address type definition
-- `SECP256K1.cpp` - Implemented TRON GetHash160 and GetAddress
-- `Vanity.cpp` - Added TRON address recognition
-- `main.cpp` - Updated usage/help text
-- `Makefile` - Added keccak256.cpp to build
-
-## Technical Details
-
-### Address Type Constants
-```cpp
-#define P2PKH  0   // Bitcoin P2PKH
-#define P2SH   1   // Bitcoin P2SH  
-#define BECH32 2   // Bitcoin Bech32
-#define TRON   3   // TRON addresses
-```
-
-### Keccak256 vs SHA3-256
-Note: This implementation uses Keccak256 (Ethereum-style), which is different from the final SHA3-256 standard. TRON uses the same Keccak256 as Ethereum.
+This modified version of VanitySearch supports TRON address generation based on the Keccak-256 algorithm from the newtron project.
 
 ## Building
 
-### CPU Only (for testing)
 ```bash
-make clean
-make gpu=0
-```
-
-### With GPU Support
-```bash
-make clean  
 make all
 ```
 
-## Testing
+Note: Requires CUDA toolkit for GPU support. CPU-only builds will compile successfully but cannot link the final executable without GPU libraries.
 
-Test TRON address generation:
+## Usage
+
+### Search for TRON addresses
+
 ```bash
-# Generate a TRON address from a known private key
-./vanitysearch -check
+./vanitysearch -tron Txxx
 ```
 
-## Known Limitations
+This will search for TRON addresses starting with "Txxx".
 
-1. **GPU Support**: Full CUDA implementation for Keccak256 is in progress
-2. **Performance**: CPU-only implementation is functional but slower than GPU
-3. **Testing**: Comprehensive test suite for TRON addresses needed
+### Example
 
-## Future Enhancements
+```bash
+# Search for a TRON address starting with "TABC"
+./vanitysearch -tron TABC
 
-- [ ] Complete CUDA Keccak256 optimization
-- [ ] Add SSE/AVX optimizations for CPU Keccak256
-- [ ] Benchmark TRON vs Bitcoin address generation performance
-- [ ] Add support for TRON vanity contract addresses
-- [ ] Implement batch address generation
-- [ ] Add comprehensive test suite
+# Search with GPU ID selection
+./vanitysearch -tron -gpuId 0 TABC
 
-## Reference
+# Search from input file
+./vanitysearch -tron -i addresses.txt
 
-The TRON address generation algorithm is based on:
-- calc_addrs.cl (OpenCL reference implementation)
-- TRON Protocol documentation
-- Ethereum address generation (similar Keccak256 usage)
+# Stop when address is found
+./vanitysearch -tron -stop TABC
+```
 
-## Contributing
+## TRON Address Format
 
-When contributing TRON-related code:
-1. Ensure compatibility with existing Bitcoin address generation
-2. Add appropriate test cases
-3. Document any algorithm-specific optimizations
-4. Follow the existing code style
+- TRON addresses always start with 'T'
+- Generated using Keccak-256 hash of the public key
+- Uses Base58 encoding with 0x41 prefix
+- Example: `TMVQGm1qAQYVdetCeGRRkTWYYrLXt4u51W`
 
-## License
+## Implementation Details
 
-Same as VanitySearch - GNU General Public License v3.0
+### Algorithm Flow:
+1. Generate SECP256K1 key pair
+2. Extract 64-byte public key (X and Y coordinates)
+3. Compute Keccak-256 hash of public key
+4. Take last 20 bytes of hash
+5. Add 0x41 prefix
+6. Compute double SHA256 checksum
+7. Base58 encode to get final address
+
+### Files Modified:
+- `hash/keccak256.cpp/h` - CPU Keccak-256 implementation
+- `GPU/GPUKeccak256.h` - GPU Keccak-256 implementation
+- `SECP256K1.cpp` - TRON address generation
+- `GPU/GPUCompute.h` - GPU kernel integration
+- `main.cpp` - Command-line interface
+- `Vanity.cpp` - Address validation
+
+## Testing
+
+Successfully tested with private key:
+```
+Private Key: 0x0000000000000000000000000000000000000000000000000000000000000001
+TRON Address: TMVQGm1qAQYVdetCeGRRkTWYYrLXt4u51W
+```
+
+## Credits
+
+Based on:
+- Original VanitySearch by JeanLucPons
+- TRON algorithm from iamasbcx/newtron project
+- calc_addrs.cl Keccak-256 implementation

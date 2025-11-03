@@ -32,6 +32,7 @@
 #include "GPUGroup.h"
 #include "GPUMath.h"
 #include "GPUHash.h"
+#include "GPUKeccak256.h"
 #include "GPUBase58.h"
 #include "GPUWildcard.h"
 #include "GPUCompute.h"

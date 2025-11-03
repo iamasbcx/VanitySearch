@@ -231,7 +231,7 @@ bool VanitySearch::initAddress(std::string& address, ADDRESS_ITEM* it) {
 
 	if (searchType == -1) searchType = aType;
 	if (aType != searchType) {
-		fprintf(stdout, "Ignoring address \"%s\" (P2PKH, P2SH, BECH32 or TRON allowed at once)\n", address.c_str());
+		fprintf(stdout, "Ignoring address \"%s\" (P2PKH, P2SH, TRON or BECH32 allowed at once)\n", address.c_str());
 		return false;
 	}
 
@@ -543,6 +543,10 @@ void VanitySearch::output(string addr, string pAddr, string pAddrHex, std::strin
 		fprintf(f, "Priv (WIF): p2wpkh:%s\n", pAddr.c_str());
 		fprintf(stdout, "Priv (WIF): p2wpkh:%s\n", pAddr.c_str());
 		//fprintf(stderr, "Priv (WIF): p2wpkh:%s\n", pAddr.c_str());
+		break;
+	case TRON:
+		fprintf(f, "Priv (HEX): %s\n", pAddrHex.c_str());
+		fprintf(stdout, "Priv (HEX): %s\n", pAddrHex.c_str());
 		break;
 	}
 

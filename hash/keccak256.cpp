@@ -1,126 +1,96 @@
 /*
- * Keccak256 implementation for TRON address generation
- * Adapted from OpenCL reference implementation in calc_addrs.cl
+ * Keccak-256 hash implementation for TRON address generation
+ * Based on the Keccak algorithm
  */
 
 #include "keccak256.h"
 #include <string.h>
 
-// Keccak256 round constants
+#define KECCAK_ROUNDS 24
+
 static const uint64_t keccakf_rndc[24] = {
-    0x0000000000000001ULL, 0x0000000000008082ULL, 0x800000000000808aULL,
-    0x8000000080008000ULL, 0x000000000000808bULL, 0x0000000080000001ULL,
-    0x8000000080008081ULL, 0x8000000000008009ULL, 0x000000000000008aULL,
-    0x0000000000000088ULL, 0x0000000080008009ULL, 0x000000008000000aULL,
-    0x000000008000808bULL, 0x800000000000008bULL, 0x8000000000008089ULL,
-    0x8000000000008003ULL, 0x8000000000008002ULL, 0x8000000000000080ULL,
-    0x000000000000800aULL, 0x800000008000000aULL, 0x8000000080008081ULL,
-    0x8000000000008080ULL, 0x0000000080000001ULL, 0x8000000080008008ULL
+    0x0000000000000001ULL, 0x0000000000008082ULL,
+    0x800000000000808aULL, 0x8000000080008000ULL,
+    0x000000000000808bULL, 0x0000000080000001ULL,
+    0x8000000080008081ULL, 0x8000000000008009ULL,
+    0x000000000000008aULL, 0x0000000000000088ULL,
+    0x0000000080008009ULL, 0x000000008000000aULL,
+    0x000000008000808bULL, 0x800000000000008bULL,
+    0x8000000000008089ULL, 0x8000000000008003ULL,
+    0x8000000000008002ULL, 0x8000000000000080ULL,
+    0x000000000000800aULL, 0x800000008000000aULL,
+    0x8000000080008081ULL, 0x8000000000008080ULL,
+    0x0000000080000001ULL, 0x8000000080008008ULL
 };
 
-// Rotate left
-static inline uint64_t rotl64(uint64_t x, int n) {
-    return (x << n) | (x >> (64 - n));
-}
+static const unsigned int keccakf_rotc[24] = {
+    1, 3, 6, 10, 15, 21, 28, 36, 45, 55, 2, 14, 27, 41, 56, 8, 25, 43, 62, 18, 39, 61, 20, 44
+};
 
-// Keccak-f[1600] permutation
+static const unsigned int keccakf_piln[24] = {
+    10, 7, 11, 17, 18, 3, 5, 16, 8, 21, 24, 4, 15, 23, 19, 13, 12, 2, 20, 14, 22, 9, 6, 1
+};
+
+#define ROTL64(x, y) (((x) << (y)) | ((x) >> (64 - (y))))
+
 static void keccakf(uint64_t st[25]) {
-    for (int round = 0; round < 24; round++) {
-        uint64_t bc[5];
-        
+    int i, j, r;
+    uint64_t t, bc[5];
+
+    for (r = 0; r < KECCAK_ROUNDS; r++) {
         // Theta
-        for (int i = 0; i < 5; i++) {
+        for (i = 0; i < 5; i++)
             bc[i] = st[i] ^ st[i + 5] ^ st[i + 10] ^ st[i + 15] ^ st[i + 20];
-        }
-        
-        for (int i = 0; i < 5; i++) {
-            uint64_t t = bc[(i + 4) % 5] ^ rotl64(bc[(i + 1) % 5], 1);
-            for (int j = 0; j < 25; j += 5) {
+
+        for (i = 0; i < 5; i++) {
+            t = bc[(i + 4) % 5] ^ ROTL64(bc[(i + 1) % 5], 1);
+            for (j = 0; j < 25; j += 5)
                 st[j + i] ^= t;
-            }
         }
-        
-        // Rho and Pi
-        uint64_t t = st[1];
-        for (int i = 0; i < 24; i++) {
-            int j = ((i + 1) * (i + 2) / 2) % 25;
+
+        // Rho Pi
+        t = st[1];
+        for (i = 0; i < 24; i++) {
+            j = keccakf_piln[i];
             bc[0] = st[j];
-            int shift = ((i + 1) * (i + 2) / 2) % 64;
-            if (shift == 0) shift = 1;
-            st[j] = rotl64(t, shift);
+            st[j] = ROTL64(t, keccakf_rotc[i]);
             t = bc[0];
         }
-        
+
         // Chi
-        for (int j = 0; j < 25; j += 5) {
-            for (int i = 0; i < 5; i++) {
+        for (j = 0; j < 25; j += 5) {
+            for (i = 0; i < 5; i++)
                 bc[i] = st[j + i];
-            }
-            for (int i = 0; i < 5; i++) {
+            for (i = 0; i < 5; i++)
                 st[j + i] ^= (~bc[(i + 1) % 5]) & bc[(i + 2) % 5];
-            }
         }
-        
+
         // Iota
-        st[0] ^= keccakf_rndc[round];
+        st[0] ^= keccakf_rndc[r];
     }
 }
 
-void keccak256(const uint8_t* input, size_t inputLen, uint8_t* output) {
+void keccak256(const uint8_t* input, size_t length, uint8_t* output) {
     uint64_t st[25];
     uint8_t temp[144];
-    size_t rsiz = 136; // 200 - 2 * 256 / 8
-    size_t rsizw = rsiz / 8;
-    
+    size_t rsiz = 136; // 200 - 2 * 32 = 136 (rate for SHA3-256)
+    size_t pt = 0;
+
     memset(st, 0, sizeof(st));
-    
-    // Absorb input
-    for (size_t i = 0; i < inputLen; ) {
-        memset(temp, 0, sizeof(temp));
-        size_t len = inputLen - i;
-        if (len > rsiz) len = rsiz;
-        memcpy(temp, input + i, len);
-        
-        // Padding
-        if (len < rsiz) {
-            temp[len] = 0x01;
-            temp[rsiz - 1] |= 0x80;
-        }
-        
-        // XOR with state
-        for (size_t j = 0; j < rsizw; j++) {
-            uint64_t val = 0;
-            for (int k = 0; k < 8; k++) {
-                val |= ((uint64_t)temp[j * 8 + k]) << (8 * k);
-            }
-            st[j] ^= val;
-        }
-        
-        keccakf(st);
-        i += len;
-        
-        if (len < rsiz) break;
-    }
-    
-    // If we didn't pad yet, pad now
-    if (inputLen % rsiz == 0 && inputLen > 0) {
-        memset(temp, 0, sizeof(temp));
-        temp[0] = 0x01;
-        temp[rsiz - 1] = 0x80;
-        for (size_t j = 0; j < rsizw; j++) {
-            uint64_t val = 0;
-            for (int k = 0; k < 8; k++) {
-                val |= ((uint64_t)temp[j * 8 + k]) << (8 * k);
-            }
-            st[j] ^= val;
-        }
-        keccakf(st);
-    }
-    
-    // Squeeze output
-    for (int i = 0; i < 4; i++) {
-        for (int j = 0; j < 8; j++) {
-            output[i * 8 + j] = (st[i] >> (8 * j)) & 0xFF;
+
+    for (size_t i = 0; i < length; i++) {
+        ((uint8_t*)st)[pt++] ^= input[i];
+        if (pt >= rsiz) {
+            keccakf(st);
+            pt = 0;
         }
     }
+
+    // Padding
+    ((uint8_t*)st)[pt] ^= 0x01;
+    ((uint8_t*)st)[rsiz - 1] ^= 0x80;
+    keccakf(st);
+
+    // Output
+    memcpy(output, st, 32);
 }

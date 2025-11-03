@@ -51,6 +51,10 @@ __device__ __noinline__ void _GetAddress(int type,uint32_t *hash,char *b58Add) {
     A[0] = 0x05;
     break;
 
+  case TRON:
+    _GetTronAddress(hash, b58Add);
+    return;
+
   }
   memcpy(A + 1, (char *)hash, 20);
 
@@ -127,4 +131,89 @@ __device__ __noinline__ void _GetAddress(int type,uint32_t *hash,char *b58Add) {
 
   b58Add[retPos] = 0;
 
+}
+
+__device__ __noinline__ void _GetTronAddress(uint32_t *hash, char *b58Add) {
+  uint32_t addBytes[16];
+  uint32_t s[16];
+  unsigned char A[25];
+  unsigned char *addPtr = A;
+  int retPos = 0;
+  unsigned char digits[128];
+  
+  // TRON uses 0x41 prefix
+  A[0] = 0x41;
+  memcpy(A + 1, (char *)hash, 20);
+  
+  // Compute checksum (double SHA256)
+  addBytes[0] = __byte_perm(hash[0], (uint32_t)A[0], 0x4012);
+  addBytes[1] = __byte_perm(hash[0], hash[1], 0x3456);
+  addBytes[2] = __byte_perm(hash[1], hash[2], 0x3456);
+  addBytes[3] = __byte_perm(hash[2], hash[3], 0x3456);
+  addBytes[4] = __byte_perm(hash[3], hash[4], 0x3456);
+  addBytes[5] = __byte_perm(hash[4], 0x80, 0x3456);
+  addBytes[6] = 0;
+  addBytes[7] = 0;
+  addBytes[8] = 0;
+  addBytes[9] = 0;
+  addBytes[10] = 0;
+  addBytes[11] = 0;
+  addBytes[12] = 0;
+  addBytes[13] = 0;
+  addBytes[14] = 0;
+  addBytes[15] = 0xA8;
+  
+  SHA256Initialize(s);
+  SHA256Transform(s, addBytes);
+  
+  #pragma unroll 8
+  for (int i = 0; i < 8; i++)
+    addBytes[i] = s[i];
+  
+  addBytes[8] = 0x80000000;
+  addBytes[9] = 0;
+  addBytes[10] = 0;
+  addBytes[11] = 0;
+  addBytes[12] = 0;
+  addBytes[13] = 0;
+  addBytes[14] = 0;
+  addBytes[15] = 0x100;
+  
+  SHA256Initialize(s);
+  SHA256Transform(s, addBytes);
+  
+  // Add checksum (first 4 bytes)
+  A[21] = ((uint8_t *)s)[3];
+  A[22] = ((uint8_t *)s)[2];
+  A[23] = ((uint8_t *)s)[1];
+  A[24] = ((uint8_t *)s)[0];
+  
+  // Base58 encode
+  // Skip leading zeroes
+  while(addPtr[0] == 0) {
+    b58Add[retPos++] = '1';
+    addPtr++;
+  }
+  int length = 25-retPos;
+  
+  int digitslen = 1;
+  digits[0] = 0;
+  for (int i = 0; i < length; i++) {
+    uint32_t carry = addPtr[i];
+    for (int j = 0; j < digitslen; j++) {
+      carry += (uint32_t)(digits[j]) << 8;
+      digits[j] = (unsigned char)(carry % 58);
+      carry /= 58;
+    }
+    while (carry > 0) {
+      digits[digitslen++] = (unsigned char)(carry % 58);
+      carry /= 58;
+    }
+  }
+  
+  // reverse
+  for (int i = 0; i < digitslen; i++)
+    b58Add[retPos++] = (pszBase58[digits[digitslen - 1 - i]]);
+  
+  b58Add[retPos] = 0;
 }

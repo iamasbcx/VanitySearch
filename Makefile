@@ -11,7 +11,7 @@ SRC = Base58.cpp IntGroup.cpp main.cpp Random.cpp \
 
 OBJDIR = obj
 
-gpu=1
+#gpu=1
 ccap=89
 
 ifdef gpu
@@ -29,14 +29,13 @@ OBJET = $(addprefix $(OBJDIR)/, \
         Base58.o IntGroup.o main.o Random.o Timer.o Int.o \
         IntMod.o Point.o SECP256K1.o Vanity.o GPU/GPUGenerate.o \
         hash/ripemd160.o hash/sha256.o hash/sha512.o \
-        hash/ripemd160_sse.o hash/sha256_sse.o hash/keccak256.o \
-        Bech32.o Wildcard.o)
+        hash/ripemd160_sse.o hash/sha256_sse.o hash/keccak256.o Bech32.o Wildcard.o)
 
 endif
 
-CXX        = g++-9
+CXX        = g++
 CUDA       = /usr/local/cuda-11.8
-CXXCUDA    = /usr/bin/g++-9
+CXXCUDA    = /usr/bin/g++
 NVCC       = $(CUDA)/bin/nvcc
 
 ifdef gpu

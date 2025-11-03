@@ -1,14 +1,13 @@
 /*
- * Keccak256 implementation for TRON address generation
- * Adapted from OpenCL reference implementation
+ * Keccak-256 hash implementation for TRON address generation
  */
 
 #ifndef KECCAK256_H
 #define KECCAK256_H
 
 #include <stdint.h>
-#include <string.h>
+#include <stddef.h>
 
-void keccak256(const uint8_t* input, size_t inputLen, uint8_t* output);
+void keccak256(const uint8_t* input, size_t length, uint8_t* output);
 
 #endif // KECCAK256_H
