@@ -307,6 +307,9 @@ void outputAdd(string outputFile, int addrType, string addr, string pAddr, strin
 	case BECH32:
 		fprintf(f, "Priv (WIF): p2wpkh:%s\n", pAddr.c_str());
 		break;
+	case TRON:
+		fprintf(f, "Priv (HEX): %s\n", pAddrHex.c_str());
+		break;
 	}
 	fprintf(f, "Priv (HEX): 0x%s\n", pAddrHex.c_str());
 
@@ -355,6 +358,8 @@ void reconstructAdd(Secp256K1* secp, string fileName, string outputFile, string 
 				addrType = P2PKH; break;
 			case '3':
 				addrType = P2SH; break;
+			case 'T':
+				addrType = TRON; break;
 			case 'b':
 			case 'B':
 				addrType = BECH32; break;

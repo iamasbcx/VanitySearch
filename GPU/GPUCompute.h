@@ -266,6 +266,20 @@ __device__ __noinline__ void CheckHashP2SHUncomp(address_t *address, uint64_t *p
 }
 
 // -----------------------------------------------------------------------------------------
+// TRON address checking
+// -----------------------------------------------------------------------------------------
+
+__device__ __noinline__ void CheckHashTron(address_t *address, uint64_t *px, uint64_t *py, int32_t incr,
+                                           uint32_t *lookup32, uint32_t maxFound, uint32_t *out) {
+
+  uint32_t h[5];
+  
+  // Get TRON hash (Keccak-256 based)
+  _GetTronHash(px, py, (uint8_t *)h);
+  CHECK_POINT(h, incr, 0, false);
+}
+
+// -----------------------------------------------------------------------------------------
 
 __device__ __noinline__ void CheckHash(uint32_t mode, address_t *address, uint64_t *px, uint64_t *py, int32_t incr, 
                                        uint32_t *lookup32, uint32_t maxFound, uint32_t *out) {
@@ -280,6 +294,9 @@ __device__ __noinline__ void CheckHash(uint32_t mode, address_t *address, uint64
   case SEARCH_BOTH:
     CheckHashComp(address, px, (uint8_t)(py[0] & 1), incr, lookup32, maxFound, out);
     CheckHashUncomp(address, px, py, incr, lookup32, maxFound, out);
+    break;
+  case SEARCH_TRON:
+    CheckHashTron(address, px, py, incr, lookup32, maxFound, out);
     break;
   }
 
