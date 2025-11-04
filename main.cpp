@@ -39,6 +39,7 @@ void printUsage() {
 	fprintf(stdout, " -u: Search uncompressed addresses\n");
 	fprintf(stdout, " -b: Search both uncompressed or compressed addresses\n");
 	fprintf(stdout, " -tron: Search TRON addresses (starts with T)\n");
+	fprintf(stdout, " -testTron: Test TRON address generation with known test vectors\n");
 	fprintf(stdout, " -stop: Stop when all addresses are found\n");
 	fprintf(stdout, " -i inputfile: Get list of addresses to search from specified file\n");
 	fprintf(stdout, " -o outputfile: Output results to the specified file\n");
@@ -277,6 +278,79 @@ void generateKeyPair(Secp256K1* secp, string seed, int searchMode, bool paranoia
 	Point p = secp->ComputePublicKey(&privKey);
 	fprintf(stdout, "Priv : %s\n", secp->GetPrivAddress(compressed, privKey).c_str());
 	fprintf(stdout, "Pub  : %s\n", secp->GetPublicKeyHex(compressed, p).c_str());
+}
+
+// genTrxAddress - TRON address generation test function
+// Tests TRON address generation with multiple test cases to verify correctness
+// Parameters:
+//   secp: Initialized Secp256K1 instance
+// This function validates the TRON address generation against known test vectors
+void genTrxAddress(Secp256K1* secp) {
+	fprintf(stdout, "\n=== TRON Address Generation Test ===\n\n");
+	
+	// Test case 1: Private key = 1
+	{
+		Int privKey;
+		privKey.SetInt32(1);
+		Point pubKey = secp->ComputePublicKey(&privKey);
+		string tronAddr = secp->GetAddress(TRON, false, pubKey);
+		string privKeyHex = privKey.GetBase16();
+		
+		fprintf(stdout, "Test 1: Private Key = 1\n");
+		fprintf(stdout, "  Private Key (HEX): %s\n", privKeyHex.c_str());
+		fprintf(stdout, "  Public Key X: %s\n", pubKey.x.GetBase16().c_str());
+		fprintf(stdout, "  Public Key Y: %s\n", pubKey.y.GetBase16().c_str());
+		fprintf(stdout, "  TRON Address: %s\n", tronAddr.c_str());
+		fprintf(stdout, "  Expected: TMVQGm1qAQYVdetCeGRRkTWYYrLXt4u51W\n");
+		fprintf(stdout, "  Status: %s\n\n", tronAddr == "TMVQGm1qAQYVdetCeGRRkTWYYrLXt4u51W" ? "PASS" : "FAIL");
+	}
+	
+	// Test case 2: Small private key
+	{
+		Int privKey;
+		privKey.SetBase16("0000000000000000000000000000000000000000000000000000000000000002");
+		Point pubKey = secp->ComputePublicKey(&privKey);
+		string tronAddr = secp->GetAddress(TRON, false, pubKey);
+		string privKeyHex = privKey.GetBase16();
+		
+		fprintf(stdout, "Test 2: Private Key = 2\n");
+		fprintf(stdout, "  Private Key (HEX): %s\n", privKeyHex.c_str());
+		fprintf(stdout, "  Public Key X: %s\n", pubKey.x.GetBase16().c_str());
+		fprintf(stdout, "  Public Key Y: %s\n", pubKey.y.GetBase16().c_str());
+		fprintf(stdout, "  TRON Address: %s\n\n", tronAddr.c_str());
+	}
+	
+	// Test case 3: Random private key
+	{
+		Int privKey;
+		privKey.SetBase16("18E14A7B6A307F426A94F8114701E7C8E774E7F9A47E2C2035DB29A206321725");
+		Point pubKey = secp->ComputePublicKey(&privKey);
+		string tronAddr = secp->GetAddress(TRON, false, pubKey);
+		string privKeyHex = privKey.GetBase16();
+		
+		fprintf(stdout, "Test 3: Random Private Key\n");
+		fprintf(stdout, "  Private Key (HEX): %s\n", privKeyHex.c_str());
+		fprintf(stdout, "  Public Key X: %s\n", pubKey.x.GetBase16().c_str());
+		fprintf(stdout, "  Public Key Y: %s\n", pubKey.y.GetBase16().c_str());
+		fprintf(stdout, "  TRON Address: %s\n\n", tronAddr.c_str());
+	}
+	
+	// Test case 4: Another known key
+	{
+		Int privKey;
+		privKey.SetBase16("4646464646464646464646464646464646464646464646464646464646464646");
+		Point pubKey = secp->ComputePublicKey(&privKey);
+		string tronAddr = secp->GetAddress(TRON, false, pubKey);
+		string privKeyHex = privKey.GetBase16();
+		
+		fprintf(stdout, "Test 4: Repeating Pattern Key\n");
+		fprintf(stdout, "  Private Key (HEX): %s\n", privKeyHex.c_str());
+		fprintf(stdout, "  Public Key X: %s\n", pubKey.x.GetBase16().c_str());
+		fprintf(stdout, "  Public Key Y: %s\n", pubKey.y.GetBase16().c_str());
+		fprintf(stdout, "  TRON Address: %s\n\n", tronAddr.c_str());
+	}
+	
+	fprintf(stdout, "=== Test Complete ===\n");
 }
 
 void outputAdd(string outputFile, int addrType, string addr, string pAddr, string pAddrHex) {
@@ -529,6 +603,10 @@ int main(int argc, char* argv[]) {
 		else if (strcmp(argv[a], "-tron") == 0) {
 			searchMode = SEARCH_TRON;
 			a++;
+		}
+		else if (strcmp(argv[a], "-testTron") == 0) {
+			genTrxAddress(secp);
+			exit(0);
 		}
 		else if (strcmp(argv[a], "-g") == 0) {
 			a++;
