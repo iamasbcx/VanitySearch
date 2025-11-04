@@ -280,6 +280,11 @@ void generateKeyPair(Secp256K1* secp, string seed, int searchMode, bool paranoia
 	fprintf(stdout, "Pub  : %s\n", secp->GetPublicKeyHex(compressed, p).c_str());
 }
 
+// genTrxAddress - TRON address generation test function
+// Tests TRON address generation with multiple test cases to verify correctness
+// Parameters:
+//   secp: Initialized Secp256K1 instance
+// This function validates the TRON address generation against known test vectors
 void genTrxAddress(Secp256K1* secp) {
 	fprintf(stdout, "\n=== TRON Address Generation Test ===\n\n");
 	

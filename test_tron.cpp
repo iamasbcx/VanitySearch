@@ -13,16 +13,16 @@ using namespace std;
 int main() {
 	printf("=== TRON Address Generation Test ===\n\n");
 	
-	// Initialize secp256k1
-	Secp256K1* secp = new Secp256K1();
-	secp->Init();
+	// Initialize secp256k1 (using stack allocation)
+	Secp256K1 secp;
+	secp.Init();
 	
 	// Test case 1: Private key = 1
 	{
 		Int privKey;
 		privKey.SetInt32(1);
-		Point pubKey = secp->ComputePublicKey(&privKey);
-		string tronAddr = secp->GetAddress(TRON, false, pubKey);
+		Point pubKey = secp.ComputePublicKey(&privKey);
+		string tronAddr = secp.GetAddress(TRON, false, pubKey);
 		string privKeyHex = privKey.GetBase16();
 		
 		printf("Test 1: Private Key = 1\n");
@@ -38,8 +38,8 @@ int main() {
 	{
 		Int privKey;
 		privKey.SetBase16("0000000000000000000000000000000000000000000000000000000000000002");
-		Point pubKey = secp->ComputePublicKey(&privKey);
-		string tronAddr = secp->GetAddress(TRON, false, pubKey);
+		Point pubKey = secp.ComputePublicKey(&privKey);
+		string tronAddr = secp.GetAddress(TRON, false, pubKey);
 		string privKeyHex = privKey.GetBase16();
 		
 		printf("Test 2: Private Key = 2\n");
@@ -53,8 +53,8 @@ int main() {
 	{
 		Int privKey;
 		privKey.SetBase16("18E14A7B6A307F426A94F8114701E7C8E774E7F9A47E2C2035DB29A206321725");
-		Point pubKey = secp->ComputePublicKey(&privKey);
-		string tronAddr = secp->GetAddress(TRON, false, pubKey);
+		Point pubKey = secp.ComputePublicKey(&privKey);
+		string tronAddr = secp.GetAddress(TRON, false, pubKey);
 		string privKeyHex = privKey.GetBase16();
 		
 		printf("Test 3: Random Private Key\n");
@@ -68,8 +68,8 @@ int main() {
 	{
 		Int privKey;
 		privKey.SetBase16("4646464646464646464646464646464646464646464646464646464646464646");
-		Point pubKey = secp->ComputePublicKey(&privKey);
-		string tronAddr = secp->GetAddress(TRON, false, pubKey);
+		Point pubKey = secp.ComputePublicKey(&privKey);
+		string tronAddr = secp.GetAddress(TRON, false, pubKey);
 		string privKeyHex = privKey.GetBase16();
 		
 		printf("Test 4: Repeating Pattern Key\n");
@@ -81,6 +81,5 @@ int main() {
 	
 	printf("=== Test Complete ===\n");
 	
-	delete secp;
 	return 0;
 }

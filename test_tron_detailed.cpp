@@ -22,12 +22,8 @@ void printHex(const char* label, const unsigned char* data, int len) {
 	printf("\n");
 }
 
-void testTronAddressStepByStep() {
+void testTronAddressStepByStep(Secp256K1& secp) {
 	printf("=== TRON Address Generation Step-by-Step Test ===\n\n");
-	
-	// Initialize secp256k1
-	Secp256K1* secp = new Secp256K1();
-	secp->Init();
 	
 	// Test with private key = 1
 	Int privKey;
@@ -36,7 +32,7 @@ void testTronAddressStepByStep() {
 	printf("Step 1: Generate public key from private key\n");
 	printf("  Private Key: 0x%s\n", privKey.GetBase16().c_str());
 	
-	Point pubKey = secp->ComputePublicKey(&privKey);
+	Point pubKey = secp.ComputePublicKey(&privKey);
 	printf("  Public Key X: %s\n", pubKey.x.GetBase16().c_str());
 	printf("  Public Key Y: %s\n", pubKey.y.GetBase16().c_str());
 	
@@ -79,27 +75,26 @@ void testTronAddressStepByStep() {
 	
 	// Verify using the library function
 	printf("\nStep 9: Verify with library function\n");
-	string libAddr = secp->GetAddress(TRON, false, pubKey);
+	string libAddr = secp.GetAddress(TRON, false, pubKey);
 	printf("  Library Result: %s\n", libAddr.c_str());
 	printf("  Match: %s\n\n", libAddr == tronAddr ? "YES" : "NO");
-	
-	delete secp;
 }
 
 int main() {
-	testTronAddressStepByStep();
+	// Initialize secp256k1 (using stack allocation)
+	Secp256K1 secp;
+	secp.Init();
+	
+	testTronAddressStepByStep(secp);
 	
 	printf("\n=== Additional Test Cases ===\n\n");
-	
-	Secp256K1* secp = new Secp256K1();
-	secp->Init();
 	
 	// Test case: Known TRON address from documentation
 	{
 		Int privKey;
 		privKey.SetInt32(1);
-		Point pubKey = secp->ComputePublicKey(&privKey);
-		string tronAddr = secp->GetAddress(TRON, false, pubKey);
+		Point pubKey = secp.ComputePublicKey(&privKey);
+		string tronAddr = secp.GetAddress(TRON, false, pubKey);
 		
 		printf("Known Test Vector:\n");
 		printf("  Private Key: 0x1\n");
@@ -107,8 +102,6 @@ int main() {
 		printf("  Expected: TMVQGm1qAQYVdetCeGRRkTWYYrLXt4u51W\n");
 		printf("  Result: %s\n\n", tronAddr == "TMVQGm1qAQYVdetCeGRRkTWYYrLXt4u51W" ? "PASS" : "FAIL");
 	}
-	
-	delete secp;
 	
 	printf("=== All Tests Complete ===\n");
 	return 0;
