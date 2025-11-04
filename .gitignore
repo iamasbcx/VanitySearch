@@ -3,3 +3,7 @@ obj/
 vanitysearch
 VanitySearch
 *.exe
+test_tron
+test_tron_detailed
+obj_main_test.o
+test_main_wrapper.cpp
