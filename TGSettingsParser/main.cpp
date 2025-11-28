@@ -49,7 +49,7 @@ void printUsage(const char* progName) {
     printf("  proxy remove <tdata_path> <index>\n");
     printf("                                 - Remove proxy by index\n");
     printf("  proxy select <tdata_path> <index>\n");
-    printf("                                 - Set active proxy\n");
+    printf("                                 - Select active proxy\n");
     printf("  proxy enable <tdata_path>      - Enable proxy\n");
     printf("  proxy disable <tdata_path>     - Disable proxy (use system)\n");
     printf("  archive collapsed <tdata_path> <0|1>\n");

@@ -195,6 +195,8 @@ public:
     ~TGSettingsParser();
     
     // Load settings from Telegram data directory
+    // Note: Settings file uses salt-based encryption (empty password)
+    // The passcode parameter is reserved for future account data decryption (key_datas)
     bool loadSettings(const std::string& tdataPath, const std::string& passcode = "");
     
     // Get parsed settings
