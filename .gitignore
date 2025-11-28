@@ -3,3 +3,4 @@ obj/
 vanitysearch
 VanitySearch
 *.exe
+_codeql_detected_source_root
