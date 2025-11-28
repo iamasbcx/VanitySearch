@@ -46,6 +46,9 @@ void printUsage(const char* progName) {
     printf("  proxy add <tdata_path> <type> <host> <port> [user] [pass]\n");
     printf("                                 - Add a new proxy\n");
     printf("                                 - type: socks5, http, mtproto\n");
+    printf("  proxy addurl <tdata_path> <url>\n");
+    printf("                                 - Add proxy from Telegram URL\n");
+    printf("                                 - Supports: t.me/proxy, t.me/socks, tg://proxy, tg://socks\n");
     printf("  proxy remove <tdata_path> <index>\n");
     printf("                                 - Remove proxy by index\n");
     printf("  proxy select <tdata_path> <index>\n");
@@ -56,16 +59,24 @@ void printUsage(const char* progName) {
     printf("                                 - Set archive collapsed state\n");
     printf("  archive menu <tdata_path> <0|1>\n");
     printf("                                 - Set archive in main menu\n");
+    printf("  archive expand <tdata_path>\n");
+    printf("                                 - Show archive in main menu + expanded\n");
     printf("\n");
     printf("Notes:\n");
     printf("  - <tdata_path> is the path to Telegram's tdata folder\n");
     printf("  - Default location: %%APPDATA%%\\Telegram Desktop\\tdata\n");
     printf("  - Settings file encryption uses salt-based key (no password needed)\n");
     printf("\n");
+    printf("Proxy URL Examples:\n");
+    printf("  https://t.me/proxy?server=1.2.3.4&port=443&secret=...\n");
+    printf("  https://t.me/socks?server=1.2.3.4&port=1080&user=xxx&pass=xxx\n");
+    printf("  tg://proxy?server=1.2.3.4&port=443&secret=...\n");
+    printf("\n");
     printf("Examples:\n");
     printf("  %s read \"C:\\Users\\User\\AppData\\Roaming\\Telegram Desktop\\tdata\"\n", progName);
     printf("  %s proxy add \"C:\\tdata\" socks5 127.0.0.1 1080\n", progName);
-    printf("  %s proxy add \"C:\\tdata\" http proxy.example.com 8080 user password\n", progName);
+    printf("  %s proxy addurl \"C:\\tdata\" \"https://t.me/socks?server=127.0.0.1&port=1080\"\n", progName);
+    printf("  %s archive expand \"C:\\tdata\"\n", progName);
 }
 
 int cmdRead(int argc, char* argv[]) {
@@ -160,6 +171,56 @@ int cmdProxyAdd(int argc, char* argv[]) {
     }
     
     printf("Proxy added successfully\n");
+    parser.printProxies();
+    return 0;
+}
+
+int cmdProxyAddUrl(int argc, char* argv[]) {
+    if (argc < 5) {
+        printf("Error: Missing arguments\n");
+        printf("Usage: proxy addurl <tdata_path> <url>\n");
+        return 1;
+    }
+    
+    const char* tdataPath = argv[3];
+    const char* url = argv[4];
+    
+    ProxyData proxy;
+    if (!ProxyData::parseFromUrl(url, proxy)) {
+        printf("Error: Invalid proxy URL format\n");
+        printf("Supported formats:\n");
+        printf("  https://t.me/proxy?server=...&port=...&secret=...\n");
+        printf("  https://t.me/socks?server=...&port=...&user=...&pass=...\n");
+        printf("  tg://proxy?server=...&port=...&secret=...\n");
+        printf("  tg://socks?server=...&port=...&user=...&pass=...\n");
+        return 1;
+    }
+    
+    printf("Parsed proxy from URL:\n");
+    printf("  Type: %s\n", proxy.type == ProxyType_Mtproto ? "MTProto" : 
+                          proxy.type == ProxyType_Socks5 ? "SOCKS5" : "Unknown");
+    printf("  Host: %s\n", proxy.host.c_str());
+    printf("  Port: %u\n", proxy.port);
+    if (!proxy.user.empty()) printf("  User: %s\n", proxy.user.c_str());
+    if (!proxy.secret.empty()) printf("  Secret: %s\n", proxy.secret.c_str());
+    
+    TGSettingsParser parser;
+    if (!parser.loadSettings(tdataPath)) {
+        printf("Error: %s\n", parser.getError().c_str());
+        return 1;
+    }
+    
+    if (!parser.addProxy(proxy)) {
+        printf("Error: %s\n", parser.getError().c_str());
+        return 1;
+    }
+    
+    if (!parser.saveSettings(tdataPath)) {
+        printf("Error: %s\n", parser.getError().c_str());
+        return 1;
+    }
+    
+    printf("\nProxy added successfully\n");
     parser.printProxies();
     return 0;
 }
@@ -348,6 +409,36 @@ int cmdArchiveMenu(int argc, char* argv[]) {
     return 0;
 }
 
+int cmdArchiveExpand(int argc, char* argv[]) {
+    if (argc < 4) {
+        printf("Error: Missing tdata path\n");
+        printf("Usage: archive expand <tdata_path>\n");
+        return 1;
+    }
+    
+    const char* tdataPath = argv[3];
+    
+    TGSettingsParser parser;
+    if (!parser.loadSettings(tdataPath)) {
+        printf("Error: %s\n", parser.getError().c_str());
+        return 1;
+    }
+    
+    if (!parser.setArchiveShowInMenuExpanded()) {
+        printf("Error: %s\n", parser.getError().c_str());
+        return 1;
+    }
+    
+    if (!parser.saveSettings(tdataPath)) {
+        printf("Error: %s\n", parser.getError().c_str());
+        return 1;
+    }
+    
+    printf("Archive set to: Show in main menu + Expanded (not collapsed)\n");
+    parser.printArchiveSettings();
+    return 0;
+}
+
 int main(int argc, char* argv[]) {
 #ifdef _WIN32
     // Enable UTF-8 console output on Windows
@@ -377,6 +468,9 @@ int main(int argc, char* argv[]) {
         }
         else if (strcmp(subcmd, "add") == 0) {
             return cmdProxyAdd(argc, argv);
+        }
+        else if (strcmp(subcmd, "addurl") == 0) {
+            return cmdProxyAddUrl(argc, argv);
         }
         else if (strcmp(subcmd, "remove") == 0) {
             return cmdProxyRemove(argc, argv);
@@ -409,6 +503,9 @@ int main(int argc, char* argv[]) {
         }
         else if (strcmp(subcmd, "menu") == 0) {
             return cmdArchiveMenu(argc, argv);
+        }
+        else if (strcmp(subcmd, "expand") == 0) {
+            return cmdArchiveExpand(argc, argv);
         }
         else {
             printf("Error: Unknown archive subcommand '%s'\n", subcmd);

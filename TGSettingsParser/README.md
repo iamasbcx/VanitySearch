@@ -7,8 +7,24 @@
 - 读取和解密 Telegram Desktop 的 settings 配置文件
 - 解析并显示设置数据
 - 修改代理配置（添加/删除/启用/禁用）
-- 修改归档设置
+- 支持从 Telegram 代理链接解析代理配置
+- 修改归档设置（折叠/展开/显示在主菜单）
 - 重新加密并保存修改后的设置
+
+## 支持的代理链接格式
+
+工具支持解析以下格式的 Telegram 代理链接：
+
+```
+# MTProto 代理
+https://t.me/proxy?server=1.2.3.4&port=443&secret=...
+tg://proxy?server=1.2.3.4&port=443&secret=...
+
+# SOCKS5 代理
+https://t.me/socks?server=1.2.3.4&port=1080&user=xxx&pass=xxx
+https://t.me/socks?server=1.2.3.4&port=1080
+tg://socks?server=1.2.3.4&port=1080&user=xxx&pass=xxx
+```
 
 ## 加密机制说明
 
@@ -42,20 +58,28 @@ TGSettingsParser.exe <command> [options]
 
 Commands:
   read <tdata_path>              - 读取并显示所有设置
+  
+  # 代理命令
   proxy list <tdata_path>        - 列出所有代理配置
   proxy add <tdata_path> <type> <host> <port> [user] [pass]
                                  - 添加新代理
                                  - type: socks5, http, mtproto
+  proxy addurl <tdata_path> <url>
+                                 - 从 Telegram 链接添加代理
   proxy remove <tdata_path> <index>
                                  - 按索引删除代理
   proxy select <tdata_path> <index>
                                  - 选择活动代理
   proxy enable <tdata_path>      - 启用代理
   proxy disable <tdata_path>     - 禁用代理 (使用系统设置)
+  
+  # 归档设置命令
   archive collapsed <tdata_path> <0|1>
-                                 - 设置归档折叠状态
+                                 - 设置归档折叠状态 (0=展开, 1=折叠)
   archive menu <tdata_path> <0|1>
-                                 - 设置归档显示在主菜单
+                                 - 设置归档显示在主菜单 (0=否, 1=是)
+  archive expand <tdata_path>    
+                                 - 显示归档在主菜单 + 取消折叠
 ```
 
 ## 示例
@@ -73,6 +97,11 @@ TGSettingsParser.exe proxy add "C:\tdata" http proxy.example.com 8080 user passw
 # 添加 MTProto 代理
 TGSettingsParser.exe proxy add "C:\tdata" mtproto mtproxy.example.com 443
 
+# 从链接添加代理
+TGSettingsParser.exe proxy addurl "C:\tdata" "https://t.me/socks?server=192.168.1.115&port=7890&user=123&pass=123"
+TGSettingsParser.exe proxy addurl "C:\tdata" "https://t.me/proxy?server=47.86.28.109&port=443&secret=ee1bdbc4..."
+TGSettingsParser.exe proxy addurl "C:\tdata" "tg://proxy?server=216.234.140.145&port=8443&secret=..."
+
 # 列出代理
 TGSettingsParser.exe proxy list "C:\tdata"
 
@@ -84,6 +113,13 @@ TGSettingsParser.exe proxy enable "C:\tdata"
 
 # 禁用代理
 TGSettingsParser.exe proxy disable "C:\tdata"
+
+# 归档设置 - 显示在主菜单并展开
+TGSettingsParser.exe archive expand "C:\tdata"
+
+# 归档设置 - 单独设置
+TGSettingsParser.exe archive menu "C:\tdata" 1      # 显示在主菜单
+TGSettingsParser.exe archive collapsed "C:\tdata" 0  # 取消折叠
 ```
 
 ## 设置文件格式

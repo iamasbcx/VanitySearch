@@ -135,8 +135,16 @@ struct ProxyData {
     uint32_t port;
     std::string user;
     std::string password;
+    std::string secret; // For MTProto proxy
     
     ProxyData() : type(ProxyType_None), port(0) {}
+    
+    // Parse proxy from Telegram URL formats:
+    // https://t.me/proxy?server=...&port=...&secret=...  (MTProto)
+    // https://t.me/socks?server=...&port=...&user=...&pass=...  (SOCKS5)
+    // tg://proxy?server=...&port=...&secret=...  (MTProto)
+    // tg://socks?server=...&port=...&user=...&pass=...  (SOCKS5)
+    static bool parseFromUrl(const std::string& url, ProxyData& proxy);
 };
 
 // Archive settings structure
@@ -212,6 +220,8 @@ public:
     // Modify archive settings
     bool setArchiveCollapsed(bool collapsed);
     bool setArchiveInMainMenu(bool inMainMenu);
+    // Set archive to show in main menu and expand (not collapsed)
+    bool setArchiveShowInMenuExpanded();
     
     // Save modified settings
     bool saveSettings(const std::string& tdataPath);

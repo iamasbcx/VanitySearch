@@ -140,6 +140,92 @@ private:
     std::vector<uint8_t> m_data;
 };
 
+// URL decoding helper
+static std::string urlDecode(const std::string& str) {
+    std::string result;
+    result.reserve(str.size());
+    for (size_t i = 0; i < str.size(); i++) {
+        if (str[i] == '%' && i + 2 < str.size()) {
+            int hex;
+            if (sscanf(str.substr(i + 1, 2).c_str(), "%x", &hex) == 1) {
+                result += (char)hex;
+                i += 2;
+            } else {
+                result += str[i];
+            }
+        } else if (str[i] == '+') {
+            result += ' ';
+        } else {
+            result += str[i];
+        }
+    }
+    return result;
+}
+
+// Parse query parameter from URL
+static std::string getQueryParam(const std::string& query, const std::string& param) {
+    std::string search = param + "=";
+    size_t pos = query.find(search);
+    if (pos == std::string::npos) return "";
+    
+    pos += search.size();
+    size_t end = query.find('&', pos);
+    if (end == std::string::npos) end = query.size();
+    
+    return urlDecode(query.substr(pos, end - pos));
+}
+
+// ProxyData URL parsing implementation
+bool ProxyData::parseFromUrl(const std::string& url, ProxyData& proxy) {
+    proxy = ProxyData(); // Reset
+    
+    // Check URL scheme
+    bool isMtproto = false;
+    bool isSocks = false;
+    std::string query;
+    
+    // Handle different URL formats:
+    // https://t.me/proxy?... or tg://proxy?... -> MTProto
+    // https://t.me/socks?... or tg://socks?... -> SOCKS5
+    
+    size_t queryStart = url.find('?');
+    if (queryStart == std::string::npos) return false;
+    
+    query = url.substr(queryStart + 1);
+    std::string path = url.substr(0, queryStart);
+    
+    // Determine proxy type from URL path
+    if (path.find("/proxy") != std::string::npos || 
+        path.find("://proxy") != std::string::npos) {
+        isMtproto = true;
+    } else if (path.find("/socks") != std::string::npos || 
+               path.find("://socks") != std::string::npos) {
+        isSocks = true;
+    } else {
+        return false;
+    }
+    
+    // Parse server and port
+    proxy.host = getQueryParam(query, "server");
+    std::string portStr = getQueryParam(query, "port");
+    
+    if (proxy.host.empty() || portStr.empty()) return false;
+    proxy.port = (uint32_t)atoi(portStr.c_str());
+    
+    if (isMtproto) {
+        proxy.type = ProxyType_Mtproto;
+        proxy.secret = getQueryParam(query, "secret");
+        // MTProto uses secret as password
+        proxy.password = proxy.secret;
+    } else if (isSocks) {
+        proxy.type = ProxyType_Socks5;
+        proxy.user = getQueryParam(query, "user");
+        proxy.password = getQueryParam(query, "pass");
+    }
+    
+    return true;
+}
+
 TGSettingsParser::TGSettingsParser() 
     : m_keyCreated(false), m_version(0) {
     m_localKey.resize(32, 0);
@@ -688,6 +774,13 @@ bool TGSettingsParser::setArchiveCollapsed(bool collapsed) {
 
 bool TGSettingsParser::setArchiveInMainMenu(bool inMainMenu) {
     m_settings.archive.archiveInMainMenu = inMainMenu;
+    return true;
+}
+
+bool TGSettingsParser::setArchiveShowInMenuExpanded() {
+    // Show archive in main menu and expand it (not collapsed)
+    m_settings.archive.archiveInMainMenu = true;
+    m_settings.archive.archiveCollapsed = false;
     return true;
 }
 
